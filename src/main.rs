@@ -24,7 +24,7 @@ async fn main() {
     // read from config to always trigger initialization of the default config if it doesn't exist
     // then release lock immediately.
     {
-        CONFIG.read().await;
+        let _ = CONFIG.read().await;
     }
     env_logger::Builder::from_env(Env::default().default_filter_or("none")).init();
     let matches = cli().get_matches();

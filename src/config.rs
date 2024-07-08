@@ -9,7 +9,7 @@ use sanitize_filename::sanitize;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use serde_with::NoneAsEmptyString;
-use std::env::var;
+use std::env::{var, VarError};
 use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
@@ -32,9 +32,9 @@ pub struct Settings {
 
 impl Settings {
     pub fn save(&self) -> Result<(), Error> {
-        let config_file = get_config_file();
-        let config_dir = get_config_dir();
-        let cache_dir = get_cache_dir();
+        let config_file = get_config_file()?;
+        let config_dir = get_config_dir()?;
+        let cache_dir = get_cache_dir()?;
 
         std::fs::create_dir_all(config_dir)?;
         std::fs::create_dir_all(cache_dir)?;
@@ -278,7 +278,7 @@ pub fn get_config() -> Result<Settings, Error> {
         .set_default("download_cover", true)?
         .set_default("downloads", 3)?
         .set_default("workers", 1)?
-        .set_default("cache_dir", get_cache_dir())?
+        .set_default("cache_dir", get_cache_dir().expect("Failed to get cache dir"))?
         .set_default("login_key.access_token", "")?
         .set_default("login_key.refresh_token", "")?
         .set_default("login_key.expires_after", 0)?
@@ -302,22 +302,45 @@ pub fn get_config() -> Result<Settings, Error> {
     Ok(settings)
 }
 
-fn get_config_dir() -> String {
-    let config_dir =
-        var("XDG_CONFIG_HOME").unwrap_or_else(|_| var("HOME").unwrap_or_else(|_| "".to_string()));
-    format!("{}/.config/tdl", config_dir)
+fn get_config_dir() -> Result<String, Error> {
+    let mut config_dir = match var("XDG_CONFIG_HOME") {
+        Ok(path) => PathBuf::from(path),
+        Err(VarError::NotPresent) => {
+            let home_dir = var("HOME")?;
+            Path::new(&home_dir).join(".config")
+        },
+        Err(e) => return Err(e.into()),
+    };
+
+    config_dir.push("tdl");
+
+    match config_dir.to_str() {
+        Some(path) => Ok(path.to_string()),
+        None => Err(anyhow::anyhow!("Failed to convert path to string")),
+    }
 }
 
-fn get_cache_dir() -> String {
-    format!("{}/cache", get_config_dir())
+
+fn get_cache_dir() -> Result<String, Error> {
+    let config_dir = get_config_dir()?;
+    let cache_dir = PathBuf::from(config_dir).join("cache");
+    cache_dir
+        .to_str()
+        .map(|s| s.to_string())
+        .ok_or_else(|| anyhow::anyhow!("Failed to convert path to string"))
 }
 
-fn get_config_file() -> String {
-    format!("{}/config.toml", get_config_dir())
+fn get_config_file() -> Result<String, Error> {
+    let config_dir = get_config_dir()?; 
+    let config_file = PathBuf::from(config_dir).join("config.toml");
+    config_file
+        .to_str()
+        .map(|s| s.to_string())
+        .ok_or_else(|| anyhow::anyhow!("Failed to convert path to string"))
 }
 
 lazy_static::lazy_static! {
-   pub static ref CONFIG_HOME: String = get_config_dir();
-   pub static ref CONFIG_FILE: String = get_config_file();
+   pub static ref CONFIG_HOME: String = get_config_dir().expect("Failed to get config dir");
+   pub static ref CONFIG_FILE: String = get_config_file().expect("Failed to get config file");
    pub static ref CONFIG: RwLock<Settings> = RwLock::new(get_config().expect("Unable to get configuration"));
 }
