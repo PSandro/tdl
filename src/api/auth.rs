@@ -107,7 +107,7 @@ impl AuthClient {
 
         let req = self
             .http
-            .post("https://auth.tidal.com/v1/oauth2/token")
+            .post(format!("{}/token", &self.auth_base))
             .body(body)
             .basic_auth(self.client_id.clone(), Some(self.client_secret.clone()))
             .header("Content-Type", "application/x-www-form-urlencoded")
