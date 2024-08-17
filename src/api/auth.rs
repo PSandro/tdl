@@ -11,6 +11,7 @@ pub struct AuthClient {
     client_id: String,
     client_secret: String,
     auth_base: String,
+    api_base: String,
     http: Client,
 }
 
@@ -20,6 +21,7 @@ impl AuthClient {
             client_id: config.client_id,
             client_secret: config.client_secret,
             auth_base: "https://auth.tidal.com/v1/oauth2".to_string(),
+            api_base: "https://api.tidal.com/v1".to_string(),
             http: build_http_client(),
         }
     }
@@ -50,7 +52,7 @@ impl AuthClient {
     pub async fn verify_access_token(&self, access_token: &str) -> Result<bool, Error> {
         let req = self
             .http
-            .get("https://api.tidal.com/v1/sessions")
+            .get(format!("{}/sessions", &self.api_base))
             .bearer_auth(access_token)
             .send()
             .await?;
@@ -124,7 +126,7 @@ impl AuthClient {
     pub async fn logout(&self, auth_token: String) -> Result<(), Error> {
         let req = self
             .http
-            .post("https://api.tidal.com/v1/logout")
+            .post(format!("{}/logout", &self.api_base))
             .bearer_auth(auth_token)
             .send()
             .await?;
