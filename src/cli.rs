@@ -15,6 +15,7 @@ pub fn cli() -> Command<'static> {
         .author(env!("CARGO_PKG_AUTHORS"))
         .about(env!("CARGO_PKG_DESCRIPTION"))
         .subcommand_required(true)
+        .disable_help_subcommand(true)
         .subcommand(get())
         .subcommand(
             Command::new("login").about("Login or re-authenticates with the current access token"),
