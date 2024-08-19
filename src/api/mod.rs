@@ -123,10 +123,11 @@ impl ApiClient {
             .bearer_auth(&self.access_token)
             .query(&params);
 
-        let result = req.send().await?.text().await?;
-        debug!("{}", result);
-        let result = serde_json::from_str::<T>(&result)?;
-        Ok(result)
+        let response = req.send().await?;
+        response.error_for_status_ref()?;
+        let data = response.text().await?;
+        debug!("{}", data);
+        serde_json::from_str::<T>(&data).map_err(Into::into)
     }
 
     pub async fn get_items<'a, T>(
