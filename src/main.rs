@@ -1,7 +1,6 @@
 use clap::ArgMatches;
 use std::io;
 use tdl::api::auth::AuthClient;
-use tdl::api::models::{Album, Artist, Track};
 use tdl::cli::{cli, parse_config_flags};
 use tdl::config::CONFIG;
 use tdl::download::dispatch_downloads;
@@ -30,7 +29,6 @@ async fn main() {
     let matches = cli().get_matches();
     match matches.subcommand() {
         Some(("get", get_matches)) => get(get_matches).await,
-        Some(("search", search_matches)) => search(search_matches).await,
         Some(("login", _)) => {
             login().await;
         }
@@ -78,41 +76,6 @@ async fn consume_channel(channel: ReceiveChannel, concurrency: usize) {
             }
         })
         .await;
-}
-
-async fn search(matches: &ArgMatches) {
-    let client = login().await;
-    if let Some(query) = matches.get_one::<String>("query") {
-        let max = matches.get_one::<usize>("max").cloned();
-        let result = match matches.get_one::<String>("filter") {
-            Some(filter) => match filter.as_str() {
-                "artist" => {
-                    client
-                        .search
-                        .search_content::<Artist>("artists", query, max)
-                        .await
-                }
-                "track" => {
-                    client
-                        .search
-                        .search_content::<Track>("tracks", query, max)
-                        .await
-                }
-                "album" => {
-                    client
-                        .search
-                        .search_content::<Album>("albums", query, max)
-                        .await
-                }
-                _ => unreachable!(),
-            },
-            None => todo!(), //search all
-        };
-        match result {
-            Ok(t) => println!("{t}"),
-            Err(e) => eprintln!("{e}"),
-        }
-    }
 }
 
 async fn logout() {

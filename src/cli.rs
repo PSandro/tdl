@@ -2,10 +2,10 @@ use crate::{api::models::AudioQuality, config::CONFIG};
 use clap::{
     arg,
     builder::{
-        BoolishValueParser, EnumValueParser, NonEmptyStringValueParser, PossibleValuesParser,
+        BoolishValueParser, EnumValueParser, NonEmptyStringValueParser,
         RangedU64ValueParser,
     },
-    value_parser, Arg, ArgMatches, Command,
+    Arg, ArgMatches, Command,
 };
 use clap_complete::Shell;
 
@@ -16,7 +16,6 @@ pub fn cli() -> Command<'static> {
         .about(env!("CARGO_PKG_DESCRIPTION"))
         .subcommand_required(true)
         .subcommand(get())
-        .subcommand(search())
         .subcommand(
             Command::new("login").about("Login or re-authenticates with the current access token"),
         )
@@ -90,38 +89,6 @@ fn get() -> Command<'static> {
                 .value_parser(BoolishValueParser::new())
                 .value_name("boolish")
                 .help("Include singles with getting lists of albums"),
-        )
-}
-
-fn search() -> Command<'static> {
-    Command::new("search")
-        .about("Searches the TIDAL API")
-        .arg(
-            Arg::new("query")
-                .takes_value(true)
-                .required(true)
-                .value_parser(NonEmptyStringValueParser::new())
-                .help("Term to search for"),
-        )
-        .arg(
-            Arg::new("filter")
-                .long("filter")
-                .short('f')
-                .value_parser(PossibleValuesParser::new([
-                    "all", "artist", "album", "track", "playlist",
-                ]))
-                .value_name("type")
-                .takes_value(true)
-                .help("Type of results to return from search"),
-        )
-        .arg(
-            Arg::new("max")
-                .long("max")
-                .short('m')
-                .takes_value(true)
-                .value_parser(value_parser!(u32))
-                .value_name("number")
-                .help("Maximum number of items to return"),
         )
 }
 
