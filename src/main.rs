@@ -1,14 +1,10 @@
 use clap::ArgMatches;
-use std::io;
 use tdl::api::auth::AuthClient;
 use tdl::cli::{cli, parse_config_flags};
 use tdl::config::CONFIG;
 use tdl::download::dispatch_downloads;
 use tdl::download::ReceiveChannel;
 use tdl::login::*;
-
-use clap_complete::{generate, Shell};
-use clap_complete_fig::Fig;
 
 use env_logger::Env;
 use futures::future::join_all;
@@ -33,7 +29,6 @@ async fn main() {
             login().await;
         }
         Some(("logout", _)) => logout().await,
-        Some(("autocomplete", matches)) => autocomplete(matches),
         _ => unreachable!(), // If all subcommands are defined above, anything else is unreachable!()
     }
 }
@@ -89,21 +84,5 @@ async fn logout() {
             Err(e) => eprintln!("Error Logging out: {e}"),
         },
         None => println!("No Auth Token is configured to logout with"),
-    }
-}
-
-fn autocomplete(matches: &ArgMatches) {
-    let mut cmd = cli();
-    if let Some(shell) = matches.get_one::<Shell>("shell") {
-        generate(
-            shell.to_owned(),
-            &mut cmd,
-            env!("CARGO_PKG_NAME"),
-            &mut io::stdout(),
-        )
-    }
-
-    if matches.contains_id("fig") {
-        generate(Fig, &mut cmd, env!("CARGO_PKG_NAME"), &mut io::stdout())
     }
 }

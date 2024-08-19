@@ -7,7 +7,6 @@ use clap::{
     },
     Arg, ArgMatches, Command,
 };
-use clap_complete::Shell;
 
 pub fn cli() -> Command<'static> {
     Command::new(env!("CARGO_PKG_NAME"))
@@ -23,7 +22,6 @@ pub fn cli() -> Command<'static> {
         .subcommand(
             Command::new("logout").about("Logout via the TIDAL API and resets the login config"),
         )
-        .subcommand(autocomplete())
 }
 
 fn get() -> Command<'static> {
@@ -90,27 +88,6 @@ fn get() -> Command<'static> {
                 .value_parser(BoolishValueParser::new())
                 .value_name("boolish")
                 .help("Include singles with getting lists of albums"),
-        )
-}
-
-fn autocomplete() -> Command<'static> {
-    Command::new("autocomplete")
-        .arg(
-            Arg::new("shell")
-                .short('s')
-                .long("shell")
-                .value_parser(EnumValueParser::<Shell>::new())
-                .required(true)
-                .takes_value(true)
-                .allow_invalid_utf8(true)
-                .help("Print Shell completions to stdout for the specified shell"),
-        )
-        .arg(
-            Arg::new("fig")
-                .conflicts_with("shell")
-                .short('f')
-                .long("fig")
-                .help("Print Fig Autocompletion Spec"),
         )
 }
 
