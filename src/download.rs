@@ -1,5 +1,5 @@
 use crate::api::{models::*, TidalClient, CLIENT};
-use crate::config::CONFIG;
+use crate::config::{CONFIG, DownloadPath};
 
 use crate::models::*;
 use anyhow::{anyhow, Error};
@@ -223,7 +223,8 @@ impl DownloadTask {
 
     async fn get_path(&self, track: &Track) -> Result<PathBuf, Error> {
         let config = &CONFIG.read().await;
-        let dl_path = &config.download_paths;
+        let mut dl_path = config.download_path.clone();
+
         let album_id = &track.album.id;
         // The track artist can be different than the album artist
         // important to use the album artist for naming.
@@ -237,7 +238,11 @@ impl DownloadTask {
             self.client.media.get_artist(&artist_id)
         )?;
 
-        dl_path.get_track_path(track.clone(), album, artist)
+        dl_path = artist.replace_path(&dl_path);
+        dl_path = album.replace_path(&dl_path);
+        dl_path = track.replace_path(&dl_path);
+
+        Ok(Path::new("").join(shellexpand::full(&dl_path)?.to_string()))
     }
 }
 

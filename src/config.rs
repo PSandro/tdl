@@ -25,7 +25,7 @@ pub struct Settings {
     pub workers: u8,
     pub download_cover: bool,
     pub cache_dir: String,
-    pub download_paths: DownloadPathSettings,
+    pub download_path: String,
     pub login_key: LoginKey,
     pub api_key: ApiKey,
 }
@@ -65,40 +65,7 @@ pub struct ApiKey {
     pub client_id: String,
     pub client_secret: String,
 }
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct DownloadPathSettings {
-    pub base_path: String,
-    pub artist: String,
-    pub album: String,
-    pub track: String,
-}
 
-impl DownloadPathSettings {
-    pub fn get_base_path(&self) -> Result<PathBuf, anyhow::Error> {
-        Ok(Path::new("").join(shellexpand::full(&self.base_path)?.to_string()))
-    }
-    pub fn get_artist_path(&self, artist: Artist) -> Result<PathBuf, anyhow::Error> {
-        let base = &self.get_base_path()?;
-        Ok(base.join(artist.replace_path(&self.artist)))
-    }
-    pub fn get_album_path(&self, album: Album, artist: Artist) -> Result<PathBuf, anyhow::Error> {
-        let base = &self.get_artist_path(artist.clone())?;
-        let path = artist.replace_path(&self.album);
-        Ok(base.join(album.replace_path(&path)))
-    }
-    pub fn get_track_path(
-        &self,
-        track: Track,
-        album: Album,
-        artist: Artist,
-    ) -> Result<PathBuf, anyhow::Error> {
-        let base = &self.get_album_path(album.clone(), artist.clone())?;
-        let mut path = track.replace_path(&self.track);
-        path = album.replace_path(&path);
-        path = artist.replace_path(&path);
-        Ok(base.join(path))
-    }
-}
 
 trait UnwrapEmptyString<T: ToString> {
     fn unwrap_empty_string(self) -> String;
@@ -121,12 +88,12 @@ where
     Self: Sized + Clone,
     T: TokenMap<Self> + 'static + Copy,
 {
-    fn replace_path(self, path: &str) -> String {
+    fn replace_path(&self, path: &str) -> String {
         let map = T::token_map();
         let mut x = path.to_string();
         map.entries().for_each(|entry| {
             if x.contains(entry.0) {
-                x = x.replace(entry.0, &entry.1.get_token(&self));
+                x = x.replace(entry.0, &entry.1.get_token(self));
             };
         });
         x
@@ -287,13 +254,7 @@ pub fn get_config() -> Result<Settings, Error> {
             "api_key.client_secret",
             "VJKhDFqJPqvsPVNBV6ukXTJmwlvbttP7wlMlrc72se4=",
         )?
-        .set_default("download_paths.base_path", "$HOME/Music")?
-        .set_default("download_paths.artist", "{artist_name}")?
-        .set_default(
-            "download_paths.album",
-            "{album_name} [{album_id}] [{album_release_year}] ",
-        )?
-        .set_default("download_paths.track", "{track_num} - {track_name}")?
+        .set_default("download_path", "$HOME/Music/{artist_name}/{album_name} [{album_id}] [{album_release_year}]/{track_num} - {track_name}")?
         .add_source(File::new(CONFIG_FILE.as_str(), FileFormat::Toml).required(false))
         .build()?;
     let settings: Settings = config.try_deserialize()?;
