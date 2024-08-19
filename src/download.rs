@@ -193,32 +193,13 @@ impl DownloadTask {
         tag.set_vorbis("COPYRIGHT", vec![track.copyright]);
         tag.set_vorbis("ISRC", vec![track.isrc]);
         if let Some(cover_id) = &track.album.cover {
-            let cover = self.get_cover_data(path.clone(), cover_id).await?;
+            let cover = self.client.media.get_cover_data(cover_id).await?;
             tag.add_picture(cover.content_type, CoverFront, cover.data);
         }
 
         tokio::task::spawn_blocking(move || tag.save()).await??;
         info!("Metadata written to file");
         Ok(())
-    }
-
-    pub async fn get_cover_data(&self, path: PathBuf, cover_id: &str) -> Result<Cover, Error> {
-        let dl_path = Path::new(&path)
-            .parent()
-            .ok_or_else(|| anyhow!("Parent Directory Doesn't exist"))?
-            .join("cover.jpg");
-        if dl_path.exists() {
-            let cover = Cover {
-                content_type: "application/jpeg".to_string(),
-                data: tokio::fs::read(dl_path).await?,
-            };
-            return Ok(cover);
-        }
-
-        let pic = self.client.media.get_cover_data(cover_id).await?;
-        tokio::fs::write(dl_path, pic.data.clone()).await?;
-        info!("Write cover to disk");
-        Ok(pic)
     }
 
     async fn get_path(&self, track: &Track) -> Result<PathBuf, Error> {
